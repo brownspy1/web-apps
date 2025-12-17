@@ -6,7 +6,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.contrib.admin.views.decorators import staff_member_required
 from .models import Room, Student, SeatAllocation, Seat, Department, Semester
 from .utils import allocate_seats
-from .utils_ai import analyze_student_list_image
 import json
 
 @staff_member_required
@@ -185,25 +184,7 @@ def manage_seat(request, room_id):
             
     return JsonResponse({'status': 'error'}, status=400)
 
-@csrf_exempt
-@staff_member_required
-def analyze_student_list(request):
-    """API to analyze uploaded image."""
-    if request.method == 'POST' and request.FILES.get('image'):
-        image_file = request.FILES['image']
-        try:
-            image_bytes = image_file.read()
-            result = analyze_student_list_image(image_bytes)
-            
-            if 'error' in result:
-                return JsonResponse({'status': 'error', 'message': result['error']}, status=400)
-                
-            return JsonResponse({'status': 'success', 'data': result})
-            
-        except Exception as e:
-            return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
-            
-    return JsonResponse({'status': 'error', 'message': 'No image provided'}, status=400)
+
 
 @staff_member_required
 def allocate_view(request):

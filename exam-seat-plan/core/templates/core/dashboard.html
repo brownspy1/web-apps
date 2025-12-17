@@ -78,12 +78,9 @@
     <div class="glass-card">
         <h2 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
             Run Allocation
-            <button type="button" class="btn btn-small" onclick="document.getElementById('imageInput').click()">
-                ✨ Auto-Fill from Image
-            </button>
         </h2>
 
-        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+
 
         <form method="POST" action="{% url 'allocate_view' %}">
             {% csrf_token %}
@@ -309,69 +306,5 @@
     }
 
     // Existing Image Upload Script
-    async function handleImageUpload(input) {
-        if (!input.files || !input.files[0]) return;
 
-        const file = input.files[0];
-        const formData = new FormData();
-        formData.append('image', file);
-
-        // Show loading state
-        const btn = document.querySelector('button[onclick*="imageInput"]');
-        const originalText = btn.innerText;
-        btn.innerText = "Processing...";
-        btn.disabled = true;
-
-        try {
-            const response = await fetch('{% url "analyze_student_list" %}', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                const data = result.data;
-
-                // Fill Rolls
-                if (data.rolls && data.rolls.length > 0) {
-                    document.getElementById('studentData').value = data.rolls.join(', ');
-                }
-
-                // Select Dept
-                if (data.department_code) {
-                    const deptSelect = document.getElementById('deptSelect');
-                    for (let option of deptSelect.options) {
-                        if (option.dataset.code === data.department_code) {
-                            deptSelect.value = option.value;
-                            break;
-                        }
-                    }
-                }
-
-                // Select Sem
-                if (data.semester_number) {
-                    const semSelect = document.getElementById('semSelect');
-                    for (let option of semSelect.options) {
-                        // Loose comparison for string vs int
-                        if (option.dataset.num == data.semester_number) {
-                            semSelect.value = option.value;
-                            break;
-                        }
-                    }
-                }
-
-                alert(`Auto-filled ${data.rolls.length} rolls!`);
-            } else {
-                alert('Error: ' + result.message);
-            }
-        } catch (e) {
-            alert('Network or Server Error: ' + e.message);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-            input.value = ''; // Reset
-        }
-    }
-</script>
-{% endblock %}
+    {% endblock %}

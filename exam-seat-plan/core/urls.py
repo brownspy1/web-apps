@@ -15,7 +15,6 @@ urlpatterns = [
     path('room/<int:room_id>/manage/', views.manage_seat, name='room_manage_seat'),
     path('room/<int:room_id>/', views.room_detail, name='room_detail'), # Admin interactive view
     path('allocate/', views.allocate_view, name='allocate_view'),
-    path('api/analyze-image/', views.analyze_student_list, name='analyze_student_list'),
     path('manage-metadata/', views.manage_metadata, name='manage_metadata'),
     
     # Master Plan HTML
