@@ -1,0 +1,122 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Master Exam Seat Plan</title>
+    <style>
+        :root {
+            --primary: #0f172a;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            color: #000;
+            background: #fff;
+            margin: 0;
+            padding: 2cm;
+        }
+
+        h1,
+        h2,
+        h3 {
+            margin: 0;
+            margin-bottom: 1rem;
+        }
+
+        .header {
+            text-align: center;
+            border-bottom: 2px solid #000;
+            padding-bottom: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .group-header {
+            background: #eee;
+            padding: 0.5rem;
+            margin-top: 1rem;
+            border-bottom: 1px solid #aaa;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 2rem;
+        }
+
+        th,
+        td {
+            border: 1px solid #000;
+            padding: 0.5rem;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        @media print {
+            body {
+                padding: 0;
+                background: white;
+            }
+
+            .page-break {
+                page-break-before: always;
+            }
+
+            .no-print {
+                display: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="no-print" style="margin-bottom: 1rem; text-align: center;">
+        <button onclick="window.print()"
+            style="padding: 0.5rem 1rem; cursor: pointer; background: #0f172a; color: white; border: none; border-radius: 4px;">Print
+            / Save as PDF</button>
+    </div>
+
+    <div class="header">
+        <h1>Exam Seat Plan</h1>
+        <p>Master List by Semester & Department</p>
+    </div>
+
+    {% for semester_group in grouped_data %}
+    <div class="semester-section {% if not forloop.first %}page-break{% endif %}">
+        <h2>{{ semester_group.semester.name }} (Semester {{ semester_group.semester.number }})</h2>
+
+        {% for dept_group in semester_group.departments %}
+        <div class="dept-section">
+            <h3>Department: {{ dept_group.department.name }} ({{ dept_group.department.code }})</h3>
+
+            <table>
+                <thead>
+                    <tr>
+                        <th style="width: 15%;">Roll Number</th>
+                        <th style="width: 25%;">Room</th>
+                        <th style="width: 15%;">Seat</th>
+                        <th style="width: 45%;">Signature</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for allocation in dept_group.allocations %}
+                    <tr>
+                        <td>{{ allocation.student.roll_number }}</td>
+                        <td>{{ allocation.seat.room.name }}</td>
+                        <td>R{{ allocation.seat.row }} C{{ allocation.seat.col }}</td>
+                        <td></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+</body>
+
+</html>

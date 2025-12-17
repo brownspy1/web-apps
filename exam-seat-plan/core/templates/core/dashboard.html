@@ -1,0 +1,377 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+    <h1>Admin Dashboard</h1>
+    <div style="display: flex; gap: 0.5rem;">
+        <!-- Removed HTML View as per request -->
+        <a href="{% url 'master_pdf' %}" target="_blank" class="btn">Download Master Plan (PDF)</a>
+    </div>
+</div>
+
+<div class="grid-layout" style="grid-template-columns: 1fr 1.5fr;">
+    <!-- Room Management -->
+    <!-- Left Column -->
+    <div style="display: flex; flex-direction: column; gap: 1.5rem;">
+        <!-- Metadata Management -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 1rem;">Manage Data</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <!-- Add Dept -->
+                <form method="POST" action="{% url 'manage_metadata' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_department">
+                    <label>Add Department</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="text" name="code" placeholder="Code (CSE)" required style="width: 80px;">
+                        <input type="text" name="name" placeholder="Name" required>
+                    </div>
+                    <button type="submit" class="btn btn-small" style="margin-top: 0.5rem; width: 100%;">Add
+                        Dept</button>
+                </form>
+                <!-- Add Sem -->
+                <form method="POST" action="{% url 'manage_metadata' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="action" value="add_semester">
+                    <label>Add Semester</label>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <input type="number" name="number" placeholder="#" required style="width: 50px;">
+                        <input type="text" name="name" placeholder="Label" required>
+                    </div>
+                    <button type="submit" class="btn btn-small" style="margin-top: 0.5rem; width: 100%;">Add
+                        Sem</button>
+                </form>
+            </div>
+            <div style="margin-top: 1rem; font-size: 0.9rem; color: var(--text-muted);">
+                <strong>Departments:</strong> {% for d in departments %}{{ d.code }}{% if not forloop.last %},
+                {% endif %}{% endfor %}<br>
+                <strong>Semesters:</strong> {% for s in semesters %}{{ s.number }}{% if not forloop.last %},
+                {% endif %}{% endfor %}
+            </div>
+        </div>
+
+        <!-- Room Management -->
+        <div class="glass-card">
+            <h2 style="margin-bottom: 1.5rem;">Create New Room</h2>
+            <form method="POST" action="{% url 'room_create' %}">
+                {% csrf_token %}
+                <div>
+                    <label>Room Name</label>
+                    <input type="text" name="name" placeholder="E.g. Hall A" required>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label>Rows</label>
+                        <input type="number" name="rows" placeholder="10" required>
+                    </div>
+                    <div>
+                        <label>Cols</label>
+                        <input type="number" name="cols" placeholder="6" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn" style="width: 100%; margin-top: 1rem;">Add Room</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Allocation Management -->
+    <div class="glass-card">
+        <h2 style="margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: center;">
+            Run Allocation
+            <button type="button" class="btn btn-small" onclick="document.getElementById('imageInput').click()">
+                ✨ Auto-Fill from Image
+            </button>
+        </h2>
+
+        <input type="file" id="imageInput" accept="image/*" style="display: none;" onchange="handleImageUpload(this)">
+
+        <form method="POST" action="{% url 'allocate_view' %}">
+            {% csrf_token %}
+            <div>
+                <label>Target Room</label>
+                <select name="room_id" required>
+                    {% for room in rooms %}
+                    <option value="{{ room.id }}">{{ room.name }} (Cap: {{ room.capacity }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label>Department</label>
+                    <select name="department_id" id="deptSelect" required>
+                        <option value="">Select Dept</option>
+                        {% for d in departments %}
+                        <option value="{{ d.id }}" data-code="{{ d.code }}">{{ d.code }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label>Semester</label>
+                    <select name="semester_id" id="semSelect" required>
+                        <option value="">Select Sem</option>
+                        {% for s in semesters %}
+                        <option value="{{ s.id }}" data-num="{{ s.number }}">{{ s.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div style="margin-top: 1rem;">
+                <label>Student Rolls (Paste List)</label>
+                <textarea name="student_data" id="studentData" rows="5" placeholder="1001, 1002, 1003
+1005-1010
+-1008" style="width: 100%; background: rgba(15,23,42,0.6); border: 1px solid var(--border-color); color: white; padding: 0.75rem; border-radius: 6px; font-family: inherit; margin-bottom: 1rem;"></textarea>
+                <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: -0.5rem; margin-bottom: 1rem;">
+                    Enter ranges (e.g. 101-105) or comma/newline separated IDs. Dept/Sem will be applied to all.
+                </p>
+            </div>
+
+            <div>
+                <label>Algorithm</label>
+                <select name="algorithm" required>
+                    <option value="linear_vertical" selected>Standard (Top to Bottom)</option>
+                    <option value="z_pattern">Z-Pattern (Vertical Snake)</option>
+                    <option value="anti_cheat">Anti-Cheat (No Neighbors Same Dept)</option>
+                    <option value="random">Random Shuffle</option>
+                </select>
+            </div>
+            <button type="submit" class="btn" style="width: 100%;">Generate Plan</button>
+        </form>
+    </div>
+</div>
+
+<div class="card" style="margin-top: 2rem; text-align: center;">
+    <h3>Student & Data Management</h3>
+    <p style="color: var(--text-muted); margin-bottom: 1rem;">Add, Edit, or Delete Students, Departments, and Semesters
+        manually.</p>
+    <a href="{% url 'manage_students' %}" class="btn btn-outline" style="min-width: 250px;">Manage Students & Data</a>
+</div>
+
+<script>
+    async function handleImageUpload(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // Show loading state
+        const btn = document.querySelector('button[onclick*="imageInput"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('{% url "analyze_student_list" %}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                const data = result.data;
+
+                // Fill Rolls
+                if (data.rolls && data.rolls.length > 0) {
+                    document.getElementById('studentData').value = data.rolls.join(', ');
+                }
+
+                // Select Dept
+                if (data.department_code) {
+                    const deptSelect = document.getElementById('deptSelect');
+                    for (let option of deptSelect.options) {
+                        if (option.dataset.code === data.department_code) {
+                            deptSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
+
+                // Select Sem
+                if (data.semester_number) {
+                    const semSelect = document.getElementById('semSelect');
+                    for (let option of semSelect.options) {
+                        // Loose comparison for string vs int
+                        if (option.dataset.num == data.semester_number) {
+                            semSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
+
+                alert(`Auto-filled ${data.rolls.length} rolls!`);
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (e) {
+            alert('Network or Server Error: ' + e.message);
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+            input.value = ''; // Reset
+        }
+    }
+</script>
+</div>
+
+<h2 style="margin-top: 2rem;">Available Rooms</h2>
+<div class="grid-layout">
+    {% for room in rooms %}
+    <div class="glass-card"
+        style="margin-bottom: 0; display: flex; flex-direction: column; justify-content: space-between;">
+        <div>
+            <h3>{{ room.name }}</h3>
+            <p style="color: var(--text-muted); margin-bottom: 0.5rem;">
+                {{ room.rows }} Rows x {{ room.cols }} Cols
+            </p>
+            <p style="font-size: 1.2rem; font-weight: bold;">
+                Active Seats: {{ room.capacity }}
+            </p>
+        </div>
+        <div style="margin-top: 1.5rem; display: flex; gap: 0.5rem; flex-wrap: wrap;">
+            <a href="{% url 'room_detail' room.id %}" class="btn btn-small">Manage</a>
+            <a href="{% url 'room_attendance_pdf' room.id %}" class="btn btn-small btn-outline">Attendance Sheet</a>
+
+            <button class="btn btn-small btn-outline"
+                onclick="openEditModal('{{ room.id }}', '{{ room.name }}', '{{ room.rows }}', '{{ room.cols }}')">
+                Edit
+            </button>
+
+            <a href="{% url 'room_delete' room.id %}" class="btn btn-small btn-danger"
+                style="background-color: #ef4444 !important;">DELETE (Direct)</a>
+        </div>
+    </div>
+    {% empty %}
+    <p>No rooms created yet.</p>
+    {% endfor %}
+</div>
+
+<!-- Edit Room Modal -->
+<div id="editModal"
+    style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center;">
+    <div class="glass-card" style="width: 100%; max-width: 400px; position: relative;">
+        <h2 style="margin-bottom: 1.5rem;">Edit Room</h2>
+        <form id="editForm" method="POST" action="">
+            {% csrf_token %}
+            <div style="margin-bottom: 1rem;">
+                <label>Room Name</label>
+                <input type="text" name="name" id="editName" required>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem;">
+                <div>
+                    <label>Rows</label>
+                    <input type="number" name="rows" id="editRows" required>
+                </div>
+                <div>
+                    <label>Cols</label>
+                    <input type="number" name="cols" id="editCols" required>
+                </div>
+            </div>
+            <p style="font-size: 0.8rem; color: #fbbf24; margin-bottom: 1rem;">
+                ⚠️ Warning: Reducing size will permanently delete seats outside the new range!
+            </p>
+            <div style="display: flex; gap: 1rem;">
+                <button type="button" class="btn btn-outline" onclick="closeEditModal()"
+                    style="flex: 1;">Cancel</button>
+                <button type="submit" class="btn" style="flex: 1;">Save Changes</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openEditModal(id, name, rows, cols) {
+        const modal = document.getElementById('editModal');
+        const form = document.getElementById('editForm');
+
+        // dynamic url construction
+        form.action = `/room/${id}/edit/`;
+
+        document.getElementById('editName').value = name;
+        document.getElementById('editRows').value = rows;
+        document.getElementById('editCols').value = cols;
+
+        modal.style.display = 'flex';
+    }
+
+    function closeEditModal() {
+        document.getElementById('editModal').style.display = 'none';
+    }
+
+    // Close on outside click
+    window.onclick = function (event) {
+        const modal = document.getElementById('editModal');
+        if (event.target == modal) {
+            closeEditModal();
+        }
+    }
+
+    // Existing Image Upload Script
+    async function handleImageUpload(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const formData = new FormData();
+        formData.append('image', file);
+
+        // Show loading state
+        const btn = document.querySelector('button[onclick*="imageInput"]');
+        const originalText = btn.innerText;
+        btn.innerText = "Processing...";
+        btn.disabled = true;
+
+        try {
+            const response = await fetch('{% url "analyze_student_list" %}', {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (result.status === 'success') {
+                const data = result.data;
+
+                // Fill Rolls
+                if (data.rolls && data.rolls.length > 0) {
+                    document.getElementById('studentData').value = data.rolls.join(', ');
+                }
+
+                // Select Dept
+                if (data.department_code) {
+                    const deptSelect = document.getElementById('deptSelect');
+                    for (let option of deptSelect.options) {
+                        if (option.dataset.code === data.department_code) {
+                            deptSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
+
+                // Select Sem
+                if (data.semester_number) {
+                    const semSelect = document.getElementById('semSelect');
+                    for (let option of semSelect.options) {
+                        // Loose comparison for string vs int
+                        if (option.dataset.num == data.semester_number) {
+                            semSelect.value = option.value;
+                            break;
+                        }
+                    }
+                }
+
+                alert(`Auto-filled ${data.rolls.length} rolls!`);
+            } else {
+                alert('Error: ' + result.message);
+            }
+        } catch (e) {
+            alert('Network or Server Error: ' + e.message);
+        } finally {
+            btn.innerText = originalText;
+            btn.disabled = false;
+            input.value = ''; // Reset
+        }
+    }
+</script>
+{% endblock %}

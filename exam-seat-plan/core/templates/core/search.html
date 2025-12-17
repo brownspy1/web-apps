@@ -1,0 +1,52 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div style="text-align: center; margin-top: 4rem;">
+    <h1>Find Your Exam Seat</h1>
+    <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2rem;">
+        Enter your roll number to see your room and seat allocation.
+    </p>
+
+    <div class="glass-card" style="max-width: 600px; margin: 0 auto;">
+        <form method="GET" action="" style="display: flex; gap: 1rem;">
+            <input type="text" name="q" placeholder="Enter Roll Number (e.g. 1001)" value="{{ query|default:'' }}"
+                required>
+            <button type="submit" class="btn">Search</button>
+        </form>
+
+        {% if result %}
+        <div
+            style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border-radius: 12px; border: 1px solid var(--primary-color);">
+            <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;">Allocated!</h2>
+            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">
+                <strong>Roll Number:</strong> {{ result.student.roll_number }}
+            </div>
+            <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">
+                <strong>Dept:</strong> {{ result.student.department.code }} | <strong>Sem:</strong>
+                {{ result.student.semester.number }}
+            </div>
+            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">
+                <strong>Room:</strong> {{ result.seat.room.name }}
+            </div>
+            <div class="seat-grid" style="justify-content: center;">
+                <button class="seat occupied">
+                    R{{ result.seat.row }}<br>C{{ result.seat.col }}
+                </button>
+            </div>
+            <p style="margin-top: 1rem; color: var(--text-muted);">
+                Row: {{ result.seat.row }}, Column: {{ result.seat.col }}
+            </p>
+
+            <div style="margin-top: 1.5rem; text-align: center;">
+                <a href="{% url 'public_room_view' result.seat.room.id %}" class="btn btn-outline"
+                    style="text-decoration: none;">
+                    View Room Plan
+                </a>
+            </div>
+        </div>
+        {% elif query %}
+        <!-- Messages are handled in base.html logic for "not found" -->
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

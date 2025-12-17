@@ -1,0 +1,51 @@
+{% extends 'core/base.html' %}
+
+{% block content %}
+<div style="margin-bottom: 2rem;">
+    <a href="{% url 'public_search' %}" class="btn btn-outline"
+        style="background: transparent; border: 1px solid var(--primary-color);">
+        &larr; Back to Search
+    </a>
+</div>
+
+<div class="glass-card" style="text-align: center;">
+    <h1 style="margin-bottom: 0.5rem; color: var(--primary-color);">Barisal Polytechnic Institute</h1>
+    <h2 style="margin-bottom: 0.5rem;">{{ room.name }}</h2>
+    <p style="color: var(--text-muted);">Exam Seat Plan</p>
+
+    <div style="margin-top: 2rem; overflow-x: auto;">
+        <div class="seat-grid"
+            style="grid-template-columns: repeat({{ room.cols }}, 60px); gap: 12px; margin: 0 auto; width: fit-content;">
+            {% for row in grid %}
+            {% for seat in row %}
+            {% if seat %}
+            <div class="seat {% if seat.allocation %}occupied{% endif %}"
+                style="width: 60px; height: 60px; {% if not seat.is_active %}opacity: 0.2; border-style: dashed; background: transparent;{% endif %}">
+                <div
+                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
+                    {% if seat.allocation %}
+                    <span style="font-weight: bold; font-size: 0.9rem;">{{ seat.allocation.student.roll_number }}</span>
+                    {% if seat.allocation.student.student_class %}
+                    <span style="font-size: 0.6rem; opacity: 0.8;">{{ seat.allocation.student.student_class }}</span>
+                    {% endif %}
+                    {% elif not seat.is_active %}
+                    <span style="font-size: 0.8rem;">X</span>
+                    {% else %}
+                    <span style="font-size: 0.7rem; opacity: 0.5;">Empty</span>
+                    {% endif %}
+                </div>
+                <div class="seat-tooltip">Row {{ seat.row }}, Col {{ seat.col }}</div>
+            </div>
+            {% else %}
+            <div style="width: 60px; height: 60px;"></div>
+            {% endif %}
+            {% endfor %}
+            {% endfor %}
+        </div>
+    </div>
+
+    <div style="margin-top: 2rem; color: var(--text-muted); font-size: 0.8rem;">
+        Total Allocated: {{ room.seats.count }}
+    </div>
+</div>
+{% endblock %}

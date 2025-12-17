@@ -1,0 +1,5 @@
+Django>=5.0
+psycopg2-binary>=2.9
+xhtml2pdf>=0.2.15
+google-generativeai
+python-dotenv
