@@ -4,7 +4,7 @@ A comprehensive, automated solution for managing exam seat allocations in educat
 
 ![Dashboard Preview](https://via.placeholder.com/800x400?text=Dashboard+Preview)
 
-## 🚀 Key Features
+## 🚀 Key Featuresweb apps
 
 ### 🏛️ Room & Seat Management
 - **Dynamic Layouts**: Create rooms of any size (Rows × Columns).
