@@ -145,72 +145,7 @@
     <a href="{% url 'manage_students' %}" class="btn btn-outline" style="min-width: 250px;">Manage Students & Data</a>
 </div>
 
-<script>
-    async function handleImageUpload(input) {
-        if (!input.files || !input.files[0]) return;
 
-        const file = input.files[0];
-        const formData = new FormData();
-        formData.append('image', file);
-
-        // Show loading state
-        const btn = document.querySelector('button[onclick*="imageInput"]');
-        const originalText = btn.innerText;
-        btn.innerText = "Processing...";
-        btn.disabled = true;
-
-        try {
-            const response = await fetch('{% url "analyze_student_list" %}', {
-                method: 'POST',
-                body: formData
-            });
-
-            const result = await response.json();
-
-            if (result.status === 'success') {
-                const data = result.data;
-
-                // Fill Rolls
-                if (data.rolls && data.rolls.length > 0) {
-                    document.getElementById('studentData').value = data.rolls.join(', ');
-                }
-
-                // Select Dept
-                if (data.department_code) {
-                    const deptSelect = document.getElementById('deptSelect');
-                    for (let option of deptSelect.options) {
-                        if (option.dataset.code === data.department_code) {
-                            deptSelect.value = option.value;
-                            break;
-                        }
-                    }
-                }
-
-                // Select Sem
-                if (data.semester_number) {
-                    const semSelect = document.getElementById('semSelect');
-                    for (let option of semSelect.options) {
-                        // Loose comparison for string vs int
-                        if (option.dataset.num == data.semester_number) {
-                            semSelect.value = option.value;
-                            break;
-                        }
-                    }
-                }
-
-                alert(`Auto-filled ${data.rolls.length} rolls!`);
-            } else {
-                alert('Error: ' + result.message);
-            }
-        } catch (e) {
-            alert('Network or Server Error: ' + e.message);
-        } finally {
-            btn.innerText = originalText;
-            btn.disabled = false;
-            input.value = ''; // Reset
-        }
-    }
-</script>
 </div>
 
 <h2 style="margin-top: 2rem;">Available Rooms</h2>
@@ -305,6 +240,5 @@
         }
     }
 
-    // Existing Image Upload Script
-
-    {% endblock %}
+</script>
+{% endblock %}
