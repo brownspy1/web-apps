@@ -2,33 +2,25 @@
 """Django's command-line utility for administrative tasks."""
 import os
 import sys
-import pymysql
-pymysql.install_as_MySQLdb()
-import MySQLdb
-
-print(f"DEBUG: Original MySQLdb version: {getattr(MySQLdb, 'version_info', 'None')}")
-
-# Force patch
-MySQLdb.version_info = (2, 2, 6, "final", 0)
-MySQLdb.__version__ = "2.2.6"
-
-print(f"DEBUG: Patched MySQLdb version: {MySQLdb.version_info}")
-
-# Patch MariaDB version check (User has 10.4, Django wants 10.6)
+# Optional MariaDB/MySQL patch for local development
 try:
-    from django.db.backends.mysql.base import DatabaseWrapper
-    DatabaseWrapper.check_database_version_supported = lambda self: None
-    print("DEBUG: Patched DatabaseWrapper check_database_version_supported")
-except Exception as e:
-    print(f"DEBUG: Failed to patch DatabaseWrapper: {e}")
-
-# Patch DatabaseFeatures to disable RETURNING (since usage of 10.4)
-try:
-    from django.db.backends.mysql.features import DatabaseFeatures
-    DatabaseFeatures.can_return_columns_from_insert = False
-    print("DEBUG: Patched DatabaseFeatures.can_return_columns_from_insert = False")
-except Exception as e:
-    print(f"DEBUG: Failed to patch DatabaseFeatures: {e}")
+    import pymysql
+    pymysql.install_as_MySQLdb()
+    import MySQLdb
+    MySQLdb.version_info = (2, 2, 6, "final", 0)
+    MySQLdb.__version__ = "2.2.6"
+    try:
+        from django.db.backends.mysql.base import DatabaseWrapper
+        DatabaseWrapper.check_database_version_supported = lambda self: None
+    except Exception:
+        pass
+    try:
+        from django.db.backends.mysql.features import DatabaseFeatures
+        DatabaseFeatures.can_return_columns_from_insert = False
+    except Exception:
+        pass
+except ImportError:
+    pass
 
 
 def main():

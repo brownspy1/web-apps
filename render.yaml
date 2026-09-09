@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: exam-seat-plan
+    runtime: python
+    rootDir: exam-seat-plan
+    buildCommand: ./build.sh
+    startCommand: gunicorn config.wsgi:application
+    plan: free
+    region: ohio
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: DEBUG
+        value: "False"
+      - key: SECRET_KEY
+        generateValue: true
