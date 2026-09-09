@@ -8,6 +8,7 @@ urlpatterns = [
     
     # Admin / Staff Routes
     path('dashboard/', views.dashboard, name='dashboard'),
+    path('logout/', views.user_logout, name='logout'),
     path('room/create/', views.room_create, name='room_create'),
     path('room/<int:room_id>/delete/', views.room_delete, name='room_delete'),
     path('room/<int:room_id>/edit/', views.room_edit, name='room_edit'),

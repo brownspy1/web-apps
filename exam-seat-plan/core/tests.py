@@ -143,3 +143,10 @@ class CoreTest(TestCase):
         )
         self.assertEqual(del_response.status_code, 200)
         self.assertEqual(del_response.json()['status'], 'success')
+
+    def test_user_logout(self):
+        response = self.client.get(reverse('logout'), follow=True)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'logged out successfully')
+        # Check user is logged out
+        self.assertFalse('_auth_user_id' in self.client.session)

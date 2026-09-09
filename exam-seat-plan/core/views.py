@@ -4,9 +4,17 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_exempt
 from django.contrib.admin.views.decorators import staff_member_required
+from django.contrib.auth import logout
 from .models import Room, Student, SeatAllocation, Seat, Department, Semester
 from .utils import allocate_seats
 import json
+
+def user_logout(request):
+    """Logs out the user and redirects to the public search page."""
+    logout(request)
+    messages.success(request, 'You have been logged out successfully.')
+    return redirect('public_search')
+
 
 @staff_member_required
 def dashboard(request):
