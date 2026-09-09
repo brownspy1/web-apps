@@ -1,69 +1,125 @@
 import random
+import re
 from collections import defaultdict
-from .models import SeatAllocation
+from .models import Seat, SeatAllocation
+
+BENGALI_DIGITS = str.maketrans('০১২৩৪৫৬৭৮৯', '0123456789')
+ALL_DASHES = ['\u2014', '\u2013', '\u2212', '\u2015', '\u2012', '\uFE63', '\uFF0D', '―', '—', '–', '−']
 
 def parse_student_input(input_text):
     """
     Parses input string into a list of roll numbers.
     Supports:
-    - Ranges: 1001-1005
-    - Individual: 1001, 1002
-    - Exclusions: -1003 (removes 1003 from list)
+    - Ranges: 1001-1005, 1001 — 1005 (em-dash), 1001–1005 (en-dash), 1001 to 1005, 1001..1005
+    - Bengali numerals: ৭৪৩৬২৬ — ৭৪৩৬৮১
+    - Individual: 1001, 1002, 1003
+    - Multiple separators: commas, newlines, semicolons, whitespace
+    - Exclusions: -1003, - 1003, !1003, except 1003 (removes 1003 from list)
+    - Leading zeros preservation: 0101-0105
     """
+    if not input_text:
+        return []
+
+    text = str(input_text)
+
+    # Normalize Bengali numerals
+    text = text.translate(BENGALI_DIGITS)
+
+    # Normalize unicode dashes (em-dash, en-dash, minus, etc.) to standard ASCII hyphen
+    for d in ALL_DASHES:
+        text = text.replace(d, '-')
+
+    # Replace 'to', 'TO', 'through', 'till', or '..' between range boundaries with '-'
+    text = re.sub(r'(\w+)\s*(?:\.\.+|to|TO|To|through|till)\s*(\w+)', r'\1-\2', text)
+
+    # Normalize newlines and semicolons to commas
+    text = text.replace('\r\n', ',').replace('\n', ',').replace('\r', ',').replace(';', ',')
+
+    raw_tokens = [t.strip() for t in text.split(',') if t.strip()]
+
+    tokens = []
+    for t in raw_tokens:
+        # Normalize spaces around dashes: '743626 - 743681' -> '743626-743681'
+        t = re.sub(r'\s*-\s*', '-', t)
+
+        # Check for whitespace-separated rolls inside token
+        sub_tokens = t.split()
+        if len(sub_tokens) > 1 and all(st.isdigit() or re.match(r'^\d+-\d+$', st) for st in sub_tokens):
+            tokens.extend(sub_tokens)
+        else:
+            tokens.append(t)
+
+    rolls = []
+    seen = set()
     exclusions = set()
-    
-    # Normalize newlines to commas
-    text = input_text.replace('\n', ',').replace('\r', '')
-    
-    tokens = [t.strip() for t in text.split(',') if t.strip()]
-    
-    rolls = set()
-    
+
     for token in tokens:
+        token = token.strip()
+        if not token:
+            continue
+
         is_exclusion = False
-        if token.startswith('-'):
+        if token.startswith('-') and not re.match(r'^-\d+-\d+$', token):
             is_exclusion = True
             token = token[1:].strip()
-            
-        # Parse Range or Single
+        elif token.startswith('!') or token.lower().startswith('except '):
+            is_exclusion = True
+            token = re.sub(r'^[!]|^(except\s+)', '', token, flags=re.IGNORECASE).strip()
+
         current_rolls = []
         if '-' in token:
-            try:
-                parts = token.split('-')
-                if len(parts) == 2:
-                    start = int(parts[0])
-                    end = int(parts[1])
-                    current_rolls = [str(r) for r in range(start, end + 1)]
-            except ValueError:
+            parts = [p.strip() for p in token.split('-')]
+            if len(parts) == 2 and parts[0].isdigit() and parts[1].isdigit():
+                p0, p1 = parts[0], parts[1]
+                start = int(p0)
+                end = int(p1)
+                pad_len = len(p0) if len(p0) == len(p1) and p0.startswith('0') else 0
+                if start > end:
+                    start, end = end, start
+
+                # Safety cap: max 5000 per range
+                if end - start <= 5000:
+                    for r in range(start, end + 1):
+                        r_str = str(r).zfill(pad_len) if pad_len > 0 else str(r)
+                        current_rolls.append(r_str)
+            elif len(parts) == 2:
                 pass
         else:
-            if token.isdigit():
-                current_rolls = [token]
-                
+            clean_token = token.strip()
+            if clean_token:
+                current_rolls = [clean_token]
+
         for roll in current_rolls:
             if is_exclusion:
                 exclusions.add(roll)
             else:
-                rolls.add(roll)
-                
-    # Apply exclusions
-    final_rolls = sorted(list(rolls - exclusions), key=lambda x: int(x) if x.isdigit() else x)
-    
-    # Return list of dicts for compatibility or just list of rolls?
-    # Logic in view expects list of dicts with 'roll_number' and 'student_class' (previously).
-    # Now view will assign Dept/Sem. So just returning list of rolls is easier, but let's return dicts to keep structure if needed.
-    # Actually, let's just return list of strings. View will handle it.
+                if roll not in seen:
+                    seen.add(roll)
+                    rolls.append(roll)
+
+    # Apply exclusions and sort
+    final_rolls = [r for r in rolls if r not in exclusions]
+    final_rolls.sort(key=lambda x: int(x) if x.isdigit() else x)
     return final_rolls
 
 def allocate_seats(room, students, algorithm='linear'):
     """
     Allocates students to a room based on the selected algorithm.
-    Only considers Seat objects where is_active=True.
+    Only considers Seat objects where is_active=True and unoccupied.
+    Auto-creates seats if the room was created without default seats.
     """
+    # Auto-initialize seat grid if room has no seats generated
+    if room.seats.count() == 0:
+        seats_to_create = [
+            Seat(room=room, row=r, col=c)
+            for r in range(1, room.rows + 1)
+            for c in range(1, room.cols + 1)
+        ]
+        Seat.objects.bulk_create(seats_to_create, ignore_conflicts=True)
+
     # Get all active seats that are NOT occupied
-    # We filter out seats that have an improved 'allocation' relation
     seats = list(room.seats.filter(is_active=True, allocation__isnull=True))
-    
+
     if not seats:
         return []
 

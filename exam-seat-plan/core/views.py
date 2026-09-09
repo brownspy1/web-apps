@@ -214,9 +214,16 @@ def allocate_view(request):
         
         # Parse Rolls
         from .utils import parse_student_input
-        # Now returns list of strings (roll numbers)
         roll_numbers = parse_student_input(student_data_raw)
-        
+
+        if not roll_numbers:
+            messages.error(
+                request,
+                'No valid student rolls found in the input. '
+                'Please enter roll numbers or ranges (e.g. 743626-743681 or 1001, 1002).'
+            )
+            return redirect('room_detail', room_id=room.id)
+
         students_to_allocate = []
         for roll in roll_numbers:
             # Create or Update Student with selected Dept/Sem
@@ -228,142 +235,66 @@ def allocate_view(request):
                 }
             )
             students_to_allocate.append(s)
-            
-        # Clear prior allocations for these students
+
+        # Clear prior allocations for these students to prevent double booking
         SeatAllocation.objects.filter(student__in=students_to_allocate).delete()
-        
-        # Clear allocations in this room for seats that are about to be filled? 
-        # Actually, standard behavior: Clear ALL allocations in this room? 
-        # Or just fill empty ones?
-        # User said "update allocations" usually implies filling, but previous code cleared room.
-        # "Clear existing allocations for this room"
-        # Since we are essentially "running allocation" for the room, clearing it is safer to avoid conflicts,
-        # UNLESS user wants to append?
-        # Let's keep existing logic: Wipe room, then fill.
-        # BUT if we are only adding a specific batch, maybe we shouldn't wipe?
-        # "admin student... edit ba delete... add korte parbe"
-        # If I select "CSE" and add 10 students, I probably don't want to wipe the "EEE" students already there.
-        # So we should only clear seats that conflict? 
-        # Current logic: `SeatAllocation.objects.filter(seat__room=room).delete()` clears the WHOLE room.
-        # This is bad if we are doing incremental allocation (Dept by Dept).
-        # Let's CHANGE this to incremental. ONLY new students are allocated.
-        # But we need to find EMPTY seats.
-        
-        # Don't clear room. Just find seats.
-        # But we must ensure these students aren't already seated elsewhere (already handled above).
-        
-        allocations = allocate_seats(room, students_to_allocate, algorithm)
-        # allocate_seats only uses EMPTY seats if we check logic? 
-        # utils.py: "seats = list(room.seats.filter(is_active=True))" -> this gets ALL seats.
-        # We need to filter out occupied seats.
-        
-        # Let's update allocate_seats slightly or filter here.
-        # Actually filter here:
-        allocated_seat_ids = SeatAllocation.objects.filter(seat__room=room).values_list('seat_id', flat=True)
-        # We need to update existing utils logic to handle occupied seats?
-        # In utils.py: "Only considers Seat objects where is_active=True."
-        # It doesn't check if occupied.
-        # Hack: Pass only empty seats to allocate_seats?
-        # allocate_seats takes `room`.
-        # Let's pass a list of seats instead? No, it takes room.
-        # Let's Fix utils.py to ignore occupied seats?
-        # Or Just clear the whole room if that's the intended workflow?
-        # Usually "Exam Seat Plan" = All at once.
-        # But user said "Dept add korbo...". Implies multiple batches.
-        # So Incremental is better.
-        
-        # I cannot change utils.py signature easily without breaking other things? 
-        # Actually I just updated utils.py.
-        # I can update it to: `seats = list(room.seats.filter(is_active=True, allocation__isnull=True))`
-        # But wait, `allocation` is O2O from Seat?
-        # Seat has `related_name='allocation'`.
-        # So `allocation__isnull=True` works.
-        
-        # However, I didn't verify utils.py handles this.
-        # Let's assume I fix utils logic inline here or re-edit utils.
-        # Check utils.py content again:
-        # `seats = list(room.seats.filter(is_active=True))`
-        # It gets ALL active seats.
-        
-        # If I want incremental, I should filter for empty seats.
-        # But `allocate_seats` takes `room` object.
-        # I should probably pass seats to it.
-        # Valid update: Change allocate_seats to accept `seats` list optional arg?
-        # Or just hack it:
-        # We can't easily hack it without changing utils.
-        
-        # DECISION: For now, I will wipe the room because mixing algorithms with partial data is messy (e.g. Z-pattern on half room).
-        # UNLESS user specifically asked for incremental.
-        # User: "department hobe... semistar takbe... jokon student roll add korbo tokon amra age teke add kora department... add korte parbo"
-        # Doesn't explicitly say "Append to existing room".
-        # But if a room has mixed departments, we MUST support incremental.
-        # So I MUST fix utils.py to only use Empty Seats.
-        
-        # I will modify utils.py NEXT to support `seats` argument or filter.
-        # For now in views, I'll prepare for it.
-        
-        # Let's stick to cleaning the room for now to ensure it works, then refine?
-        # No, wiping room every time you add a department is annoying.
-        # I'll modify utils.py to filter occupied seats.
-        
-        existing_allocs = list(SeatAllocation.objects.filter(seat__room=room))
-        if existing_allocs and not request.POST.get('append', 'false') == 'true':
-             # Maybe default to append? Or default to overwrite?
-             # Let's default to APPEND.
-             pass
-             
-        # Actually, let's just make `allocate_seats` smart.
-        # For now, I will use `SeatAllocation.objects.filter(seat__room=room).delete()` IF it's a fresh start.
-        # But I'll assume append for now.
-        
+
         new_allocations = allocate_seats(room, students_to_allocate, algorithm)
 
+        if not new_allocations and students_to_allocate:
+            free_seats = room.seats.filter(is_active=True, allocation__isnull=True).count()
+            messages.error(
+                request,
+                f'Could not allocate students. Room "{room.name}" has {free_seats} available seats (Total active: {room.capacity}).'
+            )
+            return redirect('room_detail', room_id=room.id)
+
         SeatAllocation.objects.bulk_create(new_allocations)
-        
+
         # Calculate Unallocated Students
         allocated_students = {alloc.student for alloc in new_allocations}
         unallocated_students = [s for s in students_to_allocate if s not in allocated_students]
-        
+
         if unallocated_students:
             # Sort for range display
             unallocated_students.sort(key=lambda s: int(s.roll_number) if s.roll_number.isdigit() else s.roll_number)
-            
-            # Logic to compress list to ranges
+
             unallocated_rolls = [s.roll_number for s in unallocated_students]
-            
+
             # Find Suggested Rooms (Rooms with empty seats)
-            # This is a bit expensive, but necessary.
             suggested_rooms = []
             all_rooms = Room.objects.exclude(id=room.id)
             for r in all_rooms:
                 taken = SeatAllocation.objects.filter(seat__room=r).count()
-                capacity = r.seats.count() # Total seats
-                # Check active seats only?
-                # For suggestion, let's assume total capacity vs total used
                 available = r.seats.filter(is_active=True).count() - taken
-                
+
                 if available > 0:
                     suggested_rooms.append({
                         'id': r.id,
                         'name': r.name,
                         'available': available
                     })
-            
-            # Sort suggested rooms by name (heuristically similar names are close)
+
             suggested_rooms.sort(key=lambda x: x['name'])
-            
-            messages.warning(request, f'Allocated {len(new_allocations)} students. {len(unallocated_students)} could not be placed.')
-            
-            # We need to re-render the room detail page with this extra info
+
+            messages.warning(
+                request,
+                f'Allocated {len(new_allocations)} students in Room {room.name}. '
+                f'{len(unallocated_students)} could not be placed due to capacity.'
+            )
+
             # Re-fetch data needed for room_detail
             seats = Seat.objects.filter(room=room).select_related('allocation__student')
             grid = [[None for _ in range(room.cols)] for _ in range(room.rows)]
             for seat in seats:
                 if seat.row <= room.rows and seat.col <= room.cols:
                     grid[seat.row-1][seat.col-1] = seat
-            
-            allocations_list = sorted([s for s in seats if hasattr(s, 'allocation')], key=lambda s: int(s.allocation.student.roll_number) if s.allocation.student.roll_number.isdigit() else s.allocation.student.roll_number)
-            
+
+            allocations_list = sorted(
+                [s for s in seats if hasattr(s, 'allocation')],
+                key=lambda s: int(s.allocation.student.roll_number) if s.allocation.student.roll_number.isdigit() else s.allocation.student.roll_number
+            )
+
             return render(request, 'core/room_detail.html', {
                 'room': room,
                 'grid': grid,
@@ -373,10 +304,10 @@ def allocate_view(request):
                 'unallocated_rolls': unallocated_rolls,
                 'suggested_rooms': suggested_rooms
             })
-        
-        messages.success(request, f'Allocated {len(new_allocations)} students.')
+
+        messages.success(request, f'Successfully allocated {len(new_allocations)} students in Room {room.name}.')
         return redirect('room_detail', room_id=room.id)
-        
+
     return redirect('dashboard')
 
 @staff_member_required
