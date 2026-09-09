@@ -1,122 +1,232 @@
 {% load static %}
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
-    <title>Master Exam Seat Plan</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Master Exam Seat Plan | Barisal Polytechnic Institute</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary: #0f172a;
+            --border-color: #cbd5e1;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
-            color: #000;
-            background: #fff;
+            font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            color: #0f172a;
+            background: #f8fafc;
             margin: 0;
-            padding: 2cm;
+            padding: 2rem;
+            line-height: 1.5;
         }
 
-        h1,
-        h2,
-        h3 {
-            margin: 0;
-            margin-bottom: 1rem;
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 2.5rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            border: 1px solid var(--border-color);
         }
+
+        .no-print-bar {
+            max-width: 1000px;
+            margin: 0 auto 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.6rem 1.25rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-decoration: none;
+            cursor: pointer;
+            border: none;
+        }
+        .btn-primary { background: #6366f1; color: white; }
+        .btn-outline { background: white; color: #334155; border: 1px solid #cbd5e1; }
 
         .header {
             text-align: center;
-            border-bottom: 2px solid #000;
-            padding-bottom: 1rem;
+            border-bottom: 2px solid #0f172a;
+            padding-bottom: 1.25rem;
             margin-bottom: 2rem;
         }
 
-        .group-header {
-            background: #eee;
-            padding: 0.5rem;
-            margin-top: 1rem;
-            border-bottom: 1px solid #aaa;
+        .institution-title {
+            font-size: 24pt;
+            font-weight: 800;
+            margin: 0 0 0.25rem;
+            letter-spacing: -0.02em;
         }
 
-        table {
+        .plan-subtitle {
+            font-size: 14pt;
+            font-weight: 700;
+            color: #475569;
+            margin: 0 0 0.25rem;
+        }
+
+        .meta-line {
+            font-size: 10pt;
+            color: #64748b;
+        }
+
+        .semester-block {
+            margin-bottom: 2.5rem;
+        }
+
+        .semester-title {
+            font-size: 14pt;
+            font-weight: 800;
+            background: #f1f5f9;
+            border-left: 5px solid #6366f1;
+            padding: 0.6rem 1rem;
+            margin: 1.5rem 0 1rem;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .dept-title {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #334155;
+            margin: 1rem 0 0.5rem;
+        }
+
+        table.plan-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 2rem;
+            margin-bottom: 1.5rem;
+            font-size: 9.5pt;
         }
 
-        th,
-        td {
-            border: 1px solid #000;
-            padding: 0.5rem;
+        table.plan-table th,
+        table.plan-table td {
+            border: 1px solid #94a3b8;
+            padding: 0.5rem 0.75rem;
             text-align: left;
         }
 
-        th {
-            background: #f0f0f0;
+        table.plan-table th {
+            background: #f8fafc;
+            font-weight: 700;
+            color: #1e293b;
+        }
+
+        table.plan-table tr:nth-child(even) td {
+            background: #fcfcfc;
+        }
+
+        .signature-col {
+            width: 30%;
         }
 
         @media print {
             body {
-                padding: 0;
-                background: white;
+                background: #ffffff !important;
+                padding: 0 !important;
+                font-family: 'Times New Roman', serif;
             }
-
+            .container {
+                box-shadow: none !important;
+                border: none !important;
+                padding: 0 !important;
+                max-width: 100% !important;
+            }
+            .no-print, .no-print-bar {
+                display: none !important;
+            }
             .page-break {
                 page-break-before: always;
             }
-
-            .no-print {
-                display: none;
+            table.plan-table th, table.plan-table td {
+                border: 1px solid #000000 !important;
+            }
+            table.plan-table th {
+                background: #eee !important;
+                color: #000 !important;
+            }
+            .semester-title {
+                background: none !important;
+                border-left: none !important;
+                border-bottom: 2px solid #000 !important;
+                padding-left: 0 !important;
             }
         }
     </style>
 </head>
-
 <body>
-    <div class="no-print" style="margin-bottom: 1rem; text-align: center;">
-        <button onclick="window.print()"
-            style="padding: 0.5rem 1rem; cursor: pointer; background: #0f172a; color: white; border: none; border-radius: 4px;">Print
-            / Save as PDF</button>
+    <div class="no-print-bar">
+        <a href="{% url 'dashboard' %}" class="btn btn-outline">&larr; Back to Dashboard</a>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'master_pdf' %}" target="_blank" class="btn btn-outline">Download Official PDF</a>
+            <button onclick="window.print()" class="btn btn-primary">Print Master Plan</button>
+        </div>
     </div>
 
-    <div class="header">
-        <h1>Exam Seat Plan</h1>
-        <p>Master List by Semester & Department</p>
-    </div>
+    <div class="container">
+        <div class="header">
+            <h1 class="institution-title">Barisal Polytechnic Institute</h1>
+            <h2 class="plan-subtitle">Master Examination Seat Allocation Plan</h2>
+            <div class="meta-line">Official Notice Board Publication &bull; Department &amp; Semester Wise Roster</div>
+        </div>
 
-    {% for semester_group in grouped_data %}
-    <div class="semester-section {% if not forloop.first %}page-break{% endif %}">
-        <h2>{{ semester_group.semester.name }} (Semester {{ semester_group.semester.number }})</h2>
+        {% for semester_group in grouped_data %}
+        <div class="semester-block {% if not forloop.first %}page-break{% endif %}">
+            <div class="semester-title">
+                {{ semester_group.semester.name }} (Semester {{ semester_group.semester.number }})
+            </div>
 
-        {% for dept_group in semester_group.departments %}
-        <div class="dept-section">
-            <h3>Department: {{ dept_group.department.name }} ({{ dept_group.department.code }})</h3>
+            {% for dept_group in semester_group.departments %}
+            <div class="dept-section">
+                <div class="dept-title">
+                    Faculty of {{ dept_group.department.name }} ({{ dept_group.department.code }}) &mdash; Total Allocated: {{ dept_group.allocations|length }}
+                </div>
 
-            <table>
-                <thead>
-                    <tr>
-                        <th style="width: 15%;">Roll Number</th>
-                        <th style="width: 25%;">Room</th>
-                        <th style="width: 15%;">Seat</th>
-                        <th style="width: 45%;">Signature</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for allocation in dept_group.allocations %}
-                    <tr>
-                        <td>{{ allocation.student.roll_number }}</td>
-                        <td>{{ allocation.seat.room.name }}</td>
-                        <td>R{{ allocation.seat.row }} C{{ allocation.seat.col }}</td>
-                        <td></td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                <table class="plan-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 20%;">Student Roll</th>
+                            <th style="width: 30%;">Exam Hall / Room</th>
+                            <th style="width: 20%;">Seat Position</th>
+                            <th class="signature-col">Candidate Signature</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for allocation in dept_group.allocations %}
+                        <tr>
+                            <td style="font-weight: 700;">{{ allocation.student.roll_number }}</td>
+                            <td>{{ allocation.seat.room.name }}</td>
+                            <td>Row {{ allocation.seat.row }}, Col {{ allocation.seat.col }}</td>
+                            <td></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+        {% empty %}
+        <div style="text-align: center; padding: 4rem; color: #64748b;">
+            <h3>No Allocations Recorded Yet</h3>
+            <p>Run the allocation engine from the Dashboard to populate the master seating plan.</p>
         </div>
         {% endfor %}
-    </div>
-    {% endfor %}
-</body>
 
+        <div style="margin-top: 3rem; display: flex; justify-content: space-between; padding-top: 2rem; border-top: 1px solid #cbd5e1; font-size: 9pt; color: #64748b;">
+            <div>Controller of Examinations</div>
+            <div>Principal / Head of Institute</div>
+        </div>
+    </div>
+</body>
 </html>

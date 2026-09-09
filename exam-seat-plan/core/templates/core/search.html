@@ -1,52 +1,149 @@
 {% extends 'core/base.html' %}
 
+{% block title %}Search Exam Seat Allocation | SeatPlan.AI{% endblock %}
+
 {% block content %}
-<div style="text-align: center; margin-top: 4rem;">
-    <h1>Find Your Exam Seat</h1>
-    <p style="color: var(--text-muted); font-size: 1.1rem; margin-bottom: 2rem;">
-        Enter your roll number to see your room and seat allocation.
-    </p>
+<div style="max-width: 800px; margin: 2rem auto;">
+    <!-- Hero Banner -->
+    <div style="text-align: center; margin-bottom: 2.5rem;">
+        <span class="badge badge-primary" style="margin-bottom: 0.75rem;">Instant Seat Locator</span>
+        <h1 style="font-size: 2.75rem; font-weight: 800; letter-spacing: -0.03em; margin-bottom: 0.75rem; background: linear-gradient(135deg, #ffffff 30%, #a5b4fc 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            Find Your Exam Seat
+        </h1>
+        <p style="color: var(--text-secondary); font-size: 1.1rem; max-width: 540px; margin: 0 auto;">
+            Enter your student roll number to view your examination room, bench position, and seat location instantly.
+        </p>
+    </div>
 
-    <div class="glass-card" style="max-width: 600px; margin: 0 auto;">
-        <form method="GET" action="" style="display: flex; gap: 1rem;">
-            <input type="text" name="q" placeholder="Enter Roll Number (e.g. 1001)" value="{{ query|default:'' }}"
-                required>
-            <button type="submit" class="btn">Search</button>
+    <!-- Search Card -->
+    <div class="glass-card" style="box-shadow: var(--shadow-glow); border-color: rgba(99, 102, 241, 0.3); margin-bottom: 2rem;">
+        <form method="GET" action="" style="display: flex; gap: 0.75rem; align-items: center;">
+            <div style="position: relative; flex: 1;">
+                <div style="position: absolute; left: 1rem; top: 50%; transform: translateY(-50%); color: var(--text-muted); display: flex; align-items: center;">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="11" cy="11" r="8"></circle>
+                        <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    </svg>
+                </div>
+                <input type="text" name="q" placeholder="Enter Roll Number (e.g. 1001, 743612)" value="{{ query|default:'' }}" required autofocus
+                       style="padding-left: 2.75rem; font-size: 1.05rem; height: 3.25rem;">
+            </div>
+            <button type="submit" class="btn btn-lg" style="height: 3.25rem;">
+                <span>Search</span>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
         </form>
+    </div>
 
-        {% if result %}
-        <div
-            style="margin-top: 2rem; padding: 1.5rem; background: rgba(99, 102, 241, 0.1); border-radius: 12px; border: 1px solid var(--primary-color);">
-            <h2 style="color: var(--primary-color); margin-bottom: 0.5rem;">Allocated!</h2>
-            <div style="font-size: 1.2rem; margin-bottom: 0.5rem;">
-                <strong>Roll Number:</strong> {{ result.student.roll_number }}
+    <!-- Allocation Result -->
+    {% if result %}
+    <div class="glass-card" style="border: 1.5px solid rgba(16, 185, 129, 0.5); background: linear-gradient(135deg, rgba(16, 185, 129, 0.08) 0%, rgba(15, 23, 42, 0.85) 100%); margin-bottom: 2.5rem; position: relative; overflow: hidden;">
+        <div style="position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: linear-gradient(90deg, #10b981, #06b6d4);"></div>
+        
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
+            <div>
+                <span class="badge badge-success" style="margin-bottom: 0.5rem;">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                    Seat Confirmed
+                </span>
+                <h2 style="font-size: 1.75rem; font-weight: 800; color: #ffffff; letter-spacing: -0.02em;">
+                    Roll Number: <span style="color: #a7f3d0;">{{ result.student.roll_number }}</span>
+                </h2>
+                <div style="color: var(--text-secondary); font-size: 0.95rem; margin-top: 0.25rem;">
+                    <strong>Department:</strong> {{ result.student.department.name }} ({{ result.student.department.code }}) &bull; 
+                    <strong>Semester:</strong> {{ result.student.semester.name }}
+                </div>
             </div>
-            <div style="font-size: 1.1rem; margin-bottom: 0.5rem;">
-                <strong>Dept:</strong> {{ result.student.department.code }} | <strong>Sem:</strong>
-                {{ result.student.semester.number }}
-            </div>
-            <div style="font-size: 1.5rem; margin-bottom: 0.5rem;">
-                <strong>Room:</strong> {{ result.seat.room.name }}
-            </div>
-            <div class="seat-grid" style="justify-content: center;">
-                <button class="seat occupied">
-                    R{{ result.seat.row }}<br>C{{ result.seat.col }}
+
+            <div style="text-align: right;">
+                <button onclick="window.print()" class="btn btn-outline btn-sm no-print" style="margin-bottom: 0.5rem;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                    Print Slip
                 </button>
             </div>
-            <p style="margin-top: 1rem; color: var(--text-muted);">
-                Row: {{ result.seat.row }}, Column: {{ result.seat.col }}
-            </p>
+        </div>
 
-            <div style="margin-top: 1.5rem; text-align: center;">
-                <a href="{% url 'public_room_view' result.seat.room.id %}" class="btn btn-outline"
-                    style="text-decoration: none;">
-                    View Room Plan
-                </a>
+        <!-- Details Grid -->
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1rem; margin-bottom: 1.75rem;">
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Exam Hall / Room</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #ffffff; margin-top: 0.25rem;">{{ result.seat.room.name }}</div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Row Number</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #6366f1; margin-top: 0.25rem;">Row {{ result.seat.row }}</div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Column (Bench)</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #a855f7; margin-top: 0.25rem;">Col {{ result.seat.col }}</div>
+            </div>
+
+            <div style="background: rgba(255, 255, 255, 0.04); border: 1px solid var(--border-subtle); border-radius: var(--radius-md); padding: 1rem; text-align: center;">
+                <div style="font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); font-weight: 700; letter-spacing: 0.05em;">Seat Identifier</div>
+                <div style="font-size: 1.5rem; font-weight: 800; color: #10b981; margin-top: 0.25rem;">R{{ result.seat.row }}-C{{ result.seat.col }}</div>
             </div>
         </div>
-        {% elif query %}
-        <!-- Messages are handled in base.html logic for "not found" -->
-        {% endif %}
+
+        <div style="display: flex; justify-content: center; gap: 1rem;">
+            <a href="{% url 'public_room_view' result.seat.room.id %}" class="btn" style="min-width: 220px;">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect><line x1="9" y1="3" x2="9" y2="21"></line></svg>
+                View Full Room Plan
+            </a>
+        </div>
+    </div>
+
+    {% elif query %}
+    <!-- Not Found State -->
+    <div class="glass-card" style="text-align: center; padding: 3rem 1.5rem; border-color: rgba(245, 158, 11, 0.3); margin-bottom: 2.5rem;">
+        <div style="width: 56px; height: 56px; border-radius: var(--radius-full); background: var(--warning-light); color: var(--warning); display: inline-flex; align-items: center; justify-content: center; margin-bottom: 1rem;">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+        </div>
+        <h3 style="font-size: 1.35rem; font-weight: 700; color: #ffffff; margin-bottom: 0.5rem;">
+            No Seat Allocation Found for "{{ query }}"
+        </h3>
+        <p style="color: var(--text-secondary); max-width: 480px; margin: 0 auto 1.5rem;">
+            Please verify that your roll number is typed correctly without extra spaces or symbols. If your roll number is correct, the allocation may not have been finalized yet.
+        </p>
+        <a href="{% url 'public_search' %}" class="btn btn-outline">Try Another Search</a>
+    </div>
+    {% endif %}
+
+    <!-- Candidate Guidelines -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.25rem;">
+        <div class="glass-card" style="padding: 1.25rem;">
+            <div style="color: var(--primary); font-size: 1.25rem; margin-bottom: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            </div>
+            <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 0.25rem;">Reporting Time</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Candidates must report at least 30 minutes before the scheduled exam start time.
+            </p>
+        </div>
+
+        <div class="glass-card" style="padding: 1.25rem;">
+            <div style="color: var(--accent-cyan); font-size: 1.25rem; margin-bottom: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+            </div>
+            <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 0.25rem;">Required Documents</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Bring your original Admit Card and Institute Student ID card to enter the examination hall.
+            </p>
+        </div>
+
+        <div class="glass-card" style="padding: 1.25rem;">
+            <div style="color: var(--danger); font-size: 1.25rem; margin-bottom: 0.5rem;">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path></svg>
+            </div>
+            <h4 style="color: #ffffff; font-weight: 700; margin-bottom: 0.25rem;">Prohibited Items</h4>
+            <p style="font-size: 0.85rem; color: var(--text-secondary);">
+                Smartwatches, mobile phones, programmable calculators, and unauthorized notes are strictly forbidden.
+            </p>
+        </div>
     </div>
 </div>
 {% endblock %}

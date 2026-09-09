@@ -1,5 +1,7 @@
 *.pyc
 __pycache__/
+*.py[cod]
+*$py.class
 *.pyo
 *.pyd
 .Python
@@ -8,6 +10,8 @@ venv/
 .venv/
 db.sqlite3
 db.sqlite3-journal
+*.sqlite3
 .env
 staticfiles/
 .DS_Store
+*.log

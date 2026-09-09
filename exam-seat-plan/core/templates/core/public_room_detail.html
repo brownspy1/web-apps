@@ -1,51 +1,92 @@
 {% extends 'core/base.html' %}
 
+{% block title %}Room Plan - {{ room.name }} | SeatPlan.AI{% endblock %}
+
 {% block content %}
-<div style="margin-bottom: 2rem;">
-    <a href="{% url 'public_search' %}" class="btn btn-outline"
-        style="background: transparent; border: 1px solid var(--primary-color);">
-        &larr; Back to Search
-    </a>
-</div>
+<div style="max-width: 1000px; margin: 1.5rem auto;">
+    <!-- Navigation & Print Header (No Print) -->
+    <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 2rem;">
+        <a href="{% url 'public_search' %}" class="btn btn-outline">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+            <span>Back to Seat Search</span>
+        </a>
 
-<div class="glass-card" style="text-align: center;">
-    <h1 style="margin-bottom: 0.5rem; color: var(--primary-color);">Barisal Polytechnic Institute</h1>
-    <h2 style="margin-bottom: 0.5rem;">{{ room.name }}</h2>
-    <p style="color: var(--text-muted);">Exam Seat Plan</p>
-
-    <div style="margin-top: 2rem; overflow-x: auto;">
-        <div class="seat-grid"
-            style="grid-template-columns: repeat({{ room.cols }}, 60px); gap: 12px; margin: 0 auto; width: fit-content;">
-            {% for row in grid %}
-            {% for seat in row %}
-            {% if seat %}
-            <div class="seat {% if seat.allocation %}occupied{% endif %}"
-                style="width: 60px; height: 60px; {% if not seat.is_active %}opacity: 0.2; border-style: dashed; background: transparent;{% endif %}">
-                <div
-                    style="display: flex; flex-direction: column; align-items: center; justify-content: center; width: 100%;">
-                    {% if seat.allocation %}
-                    <span style="font-weight: bold; font-size: 0.9rem;">{{ seat.allocation.student.roll_number }}</span>
-                    {% if seat.allocation.student.student_class %}
-                    <span style="font-size: 0.6rem; opacity: 0.8;">{{ seat.allocation.student.student_class }}</span>
-                    {% endif %}
-                    {% elif not seat.is_active %}
-                    <span style="font-size: 0.8rem;">X</span>
-                    {% else %}
-                    <span style="font-size: 0.7rem; opacity: 0.5;">Empty</span>
-                    {% endif %}
-                </div>
-                <div class="seat-tooltip">Row {{ seat.row }}, Col {{ seat.col }}</div>
-            </div>
-            {% else %}
-            <div style="width: 60px; height: 60px;"></div>
-            {% endif %}
-            {% endfor %}
-            {% endfor %}
+        <div style="display: flex; gap: 0.75rem;">
+            <button onclick="window.print()" class="btn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                <span>Print Room Plan</span>
+            </button>
         </div>
     </div>
 
-    <div style="margin-top: 2rem; color: var(--text-muted); font-size: 0.8rem;">
-        Total Allocated: {{ room.seats.count }}
+    <!-- Main Room Map Card -->
+    <div class="glass-card" style="text-align: center; margin-bottom: 2rem;">
+        <span class="badge badge-primary" style="margin-bottom: 0.5rem;">Public Examination Hall Chart</span>
+        <h1 style="font-size: 2.25rem; font-weight: 800; color: #ffffff; letter-spacing: -0.02em; margin-bottom: 0.25rem;">
+            Barisal Polytechnic Institute
+        </h1>
+        <h2 style="font-size: 1.5rem; font-weight: 700; color: #818cf8; margin-bottom: 0.5rem;">
+            {{ room.name }} &bull; Seat Map
+        </h2>
+        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-bottom: 1.5rem;">
+            Grid Structure: {{ room.rows }} Rows &times; {{ room.cols }} Columns &bull; Active Seats: {{ room.capacity }}
+        </p>
+
+        <!-- Visual Legend -->
+        <div class="no-print seat-legend" style="margin-bottom: 2rem;">
+            <div class="legend-item">
+                <div class="legend-dot occupied"></div>
+                <span>Allocated Seat</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot empty"></div>
+                <span>Unassigned Seat</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-dot walkway"></div>
+                <span>Walkway / Gap</span>
+            </div>
+        </div>
+
+        <!-- Front of Classroom Orientation Anchor -->
+        <div class="classroom-board">
+            <div class="board-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+                Front of Room &bull; Blackboard &bull; Invigilator Desk
+            </div>
+        </div>
+
+        <!-- Grid -->
+        <div class="seat-grid-container">
+            <div class="seat-grid" style="grid-template-columns: repeat({{ room.cols }}, 64px); gap: 12px;">
+                {% for row in grid %}
+                    {% for seat in row %}
+                        {% if seat %}
+                            <div class="seat {% if seat.allocation %}occupied{% elif not seat.is_active %}inactive{% endif %}"
+                                 style="cursor: default;">
+                                <span>
+                                    {% if seat.allocation %}
+                                        <span class="student-roll">{{ seat.allocation.student.roll_number }}</span>
+                                        <span class="student-class">{{ seat.allocation.student.department.code }}-{{ seat.allocation.student.semester.number }}</span>
+                                    {% elif not seat.is_active %}
+                                        <span style="font-size: 0.75rem; color: #f87171;">&times;</span>
+                                    {% else %}
+                                        <span class="seat-empty-label">Open</span>
+                                    {% endif %}
+                                </span>
+                                <div class="seat-tooltip">Row {{ seat.row }}, Col {{ seat.col }}</div>
+                            </div>
+                        {% else %}
+                            <div class="seat" style="opacity: 0; pointer-events: none;"></div>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+            </div>
+        </div>
+
+        <div style="margin-top: 1.5rem; color: var(--text-muted); font-size: 0.85rem;">
+            Total Registered Bench Positions: {{ room.seats.count }} &bull; Exam Controller Office
+        </div>
     </div>
 </div>
 {% endblock %}

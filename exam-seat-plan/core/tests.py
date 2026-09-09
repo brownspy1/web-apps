@@ -62,3 +62,84 @@ class CoreTest(TestCase):
         
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Student.objects.filter(id=s1.id).exists())
+
+    def test_public_search_view(self):
+        # Test empty search
+        response = self.client.get(reverse('public_search'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Find Your Exam Seat')
+
+        # Allocate a student
+        seat = Seat.objects.filter(room=self.room, row=1, col=1).first()
+        student = Student.objects.create(roll_number='5555', department=self.dept, semester=self.sem)
+        from .models import SeatAllocation
+        SeatAllocation.objects.create(seat=seat, student=student)
+
+        # Test search with matching roll
+        response_found = self.client.get(reverse('public_search') + '?q=5555')
+        self.assertEqual(response_found.status_code, 200)
+        self.assertContains(response_found, '5555')
+        self.assertContains(response_found, 'Seat Confirmed')
+
+        # Test search with nonexistent roll
+        response_not_found = self.client.get(reverse('public_search') + '?q=999999')
+        self.assertEqual(response_not_found.status_code, 200)
+        self.assertContains(response_not_found, 'No Seat Allocation Found')
+
+    def test_public_room_view(self):
+        response = self.client.get(reverse('public_room_view', args=[self.room.id]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.room.name)
+
+    def test_manage_students_page(self):
+        response = self.client.get(reverse('manage_students'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Registered Students')
+
+    def test_master_plan_view(self):
+        response = self.client.get(reverse('master_plan_view'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Master Examination Seat Allocation Plan')
+
+    def test_toggle_seat_api(self):
+        import json
+        response = self.client.post(
+            reverse('room_toggle_seat', args=[self.room.id]),
+            data=json.dumps({'row': 1, 'col': 1}),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['status'], 'success')
+        self.assertFalse(data['is_active'])
+
+    def test_manage_seat_api(self):
+        import json
+        # Assign student to seat
+        response = self.client.post(
+            reverse('room_manage_seat', args=[self.room.id]),
+            data=json.dumps({
+                'row': 2,
+                'col': 2,
+                'action': 'update',
+                'roll_number': '7777',
+                'department_id': self.dept.id,
+                'semester_id': self.sem.id
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['status'], 'success')
+
+        # Delete student from seat
+        del_response = self.client.post(
+            reverse('room_manage_seat', args=[self.room.id]),
+            data=json.dumps({
+                'row': 2,
+                'col': 2,
+                'action': 'delete'
+            }),
+            content_type='application/json'
+        )
+        self.assertEqual(del_response.status_code, 200)
+        self.assertEqual(del_response.json()['status'], 'success')

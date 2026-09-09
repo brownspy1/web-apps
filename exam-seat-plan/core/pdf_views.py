@@ -1,6 +1,10 @@
 from django.http import HttpResponse
 from django.template.loader import get_template
-from xhtml2pdf import pisa
+try:
+    from xhtml2pdf import pisa
+except ImportError:
+    pisa = None
+
 from io import BytesIO
 from .models import Room, Seat, SeatAllocation
 from django.contrib.admin.views.decorators import staff_member_required
@@ -10,6 +14,8 @@ from django.utils.timezone import now
 from collections import defaultdict
 
 def render_to_pdf(template_src, context_dict={}):
+    if pisa is None:
+        return HttpResponse("PDF generator error: xhtml2pdf is not installed.", status=501)
     template = get_template(template_src)
     html  = template.render(context_dict)
     result = BytesIO()

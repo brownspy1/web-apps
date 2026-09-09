@@ -1,106 +1,159 @@
 {% extends 'core/base.html' %}
 
+{% block title %}Manage Students & Academic Records | SeatPlan.AI{% endblock %}
+
 {% block content %}
-<div class="container" style="max-width: 1200px; margin: 0 auto; padding: 2rem;">
-
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div style="margin-bottom: 2rem;">
+    <!-- Page Header -->
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
         <div>
-            <h1 style="margin-bottom: 0.5rem;">Manage Students & Data</h1>
-            <p style="color: var(--text-muted);">View, Add, Edit, or Delete Students, Departments, and Semesters.</p>
+            <h1 style="font-size: 2.25rem; font-weight: 800; letter-spacing: -0.02em; margin-bottom: 0.25rem;">
+                Students & Academic Records
+            </h1>
+            <p style="color: var(--text-secondary); font-size: 0.95rem;">
+                Maintain student registers, academic departments, and semester curriculum profiles.
+            </p>
         </div>
-        <a href="{% url 'dashboard' %}" class="btn btn-outline">Back to Dashboard</a>
+        <div style="display: flex; gap: 0.75rem;">
+            <a href="{% url 'dashboard' %}" class="btn btn-outline">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"></line><polyline points="12 19 5 12 12 5"></polyline></svg>
+                <span>Dashboard</span>
+            </a>
+        </div>
     </div>
 
-    <!-- Tabs -->
-    <div style="display: flex; gap: 1rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border-color);">
-        <button class="tab-btn active" onclick="openTab(event, 'Students')">Students</button>
-        <button class="tab-btn" onclick="openTab(event, 'Departments')">Departments</button>
-        <button class="tab-btn" onclick="openTab(event, 'Semesters')">Semesters</button>
+    <!-- Tab Navigation -->
+    <div class="tab-navigation">
+        <button class="tab-btn active" onclick="openTab(event, 'Students')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>
+            <span>Registered Students</span>
+            <span class="badge badge-primary" style="margin-left: 0.25rem;">{{ students|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="openTab(event, 'Departments')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+            <span>Departments</span>
+            <span class="badge badge-neutral" style="margin-left: 0.25rem;">{{ departments|length }}</span>
+        </button>
+        <button class="tab-btn" onclick="openTab(event, 'Semesters')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+            <span>Semesters</span>
+            <span class="badge badge-neutral" style="margin-left: 0.25rem;">{{ semesters|length }}</span>
+        </button>
     </div>
 
-    <!-- Students Tab -->
+    <!-- 1. STUDENTS TAB -->
     <div id="Students" class="tab-content" style="display: block;">
-        <div class="card">
-            <h3 style="margin-bottom: 1rem;">Filter Students</h3>
-            <form method="get" class="grid-form"
-                style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 1rem; align-items: end;">
-                <div>
-                    <label>Department</label>
+        <!-- Filters Card -->
+        <div class="glass-card" style="margin-bottom: 1.5rem; padding: 1.25rem 1.5rem;">
+            <form method="get" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) auto; gap: 1rem; align-items: flex-end;">
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Filter Department</label>
                     <select name="dept">
                         <option value="">All Departments</option>
                         {% for d in departments %}
-                        <option value="{{ d.id }}"
-                            {% if request.GET.dept == d.id|stringformat:"s" %}selected{% endif %}>{{ d.name }}
-                            ({{ d.code }})</option>
+                        <option value="{{ d.id }}" {% if request.GET.dept == d.id|stringformat:"s" %}selected{% endif %}>
+                            {{ d.name }} ({{ d.code }})
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
-                <div>
-                    <label>Semester</label>
+                <div class="form-group" style="margin-bottom: 0;">
+                    <label class="form-label">Filter Semester</label>
                     <select name="sem">
                         <option value="">All Semesters</option>
                         {% for s in semesters %}
                         <option value="{{ s.id }}" {% if request.GET.sem == s.id|stringformat:"s" %}selected{% endif %}>
-                            {{ s.name }}</option>
+                            {{ s.name }} (Sem {{ s.number }})
+                        </option>
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="btn">Filter</button>
+                <div style="display: flex; gap: 0.5rem;">
+                    <button type="submit" class="btn">Apply Filter</button>
+                    {% if request.GET.dept or request.GET.sem %}
+                    <a href="{% url 'manage_students' %}" class="btn btn-outline">Clear</a>
+                    {% endif %}
+                </div>
             </form>
         </div>
 
-        <div class="card" style="margin-top: 2rem;">
+        <!-- Student Records Table Card -->
+        <div class="glass-card">
             <form id="bulkDeleteForm" method="post" action="{% url 'student_bulk_delete' %}">
                 {% csrf_token %}
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                    <div style="display: flex; gap: 1rem; align-items: center;">
-                        <h3>Student List ({{ students|length }})</h3>
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.25rem;">
+                    <div style="display: flex; align-items: center; gap: 1rem;">
+                        <h3 class="card-title" style="margin-bottom: 0;">
+                            Student Register
+                        </h3>
                         <div id="selectionActions" style="display: none;">
-                            <button type="submit" class="btn btn-sm"
-                                style="background: #ef4444; border: none; color: white;"
-                                onclick="return confirm('Are you sure you want to delete selected students?')">
-                                Delete Selected (<span id="selectedCount">0</span>)
+                            <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Delete selected students permanently?')">
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"></path></svg>
+                                <span>Delete Selected (<span id="selectedCount">0</span>)</span>
                             </button>
                         </div>
                     </div>
-                    <button type="button" class="btn" onclick="openModal('studentModal')">Add Student</button>
+
+                    <div style="display: flex; gap: 0.75rem; align-items: center;">
+                        <!-- Live Search Input -->
+                        <div style="position: relative; width: 220px;">
+                            <input type="search" id="liveRollSearch" placeholder="Quick find roll..." onkeyup="filterStudentTable()"
+                                   style="padding: 0.5rem 0.75rem; font-size: 0.85rem; height: auto;">
+                        </div>
+                        <button type="button" class="btn" onclick="openModal('studentModal')">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                            <span>Add Student</span>
+                        </button>
+                    </div>
                 </div>
 
-                <div style="overflow-x: auto;">
-                    <table style="width: 100%; border-collapse: collapse;">
+                <div class="table-wrapper">
+                    <table class="modern-table" id="studentTable">
                         <thead>
-                            <tr style="text-align: left; background: rgba(255,255,255,0.05);">
-                                <th style="padding: 1rem; width: 40px;">
-                                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)">
+                            <tr>
+                                <th style="width: 44px; text-align: center;">
+                                    <input type="checkbox" id="selectAll" onclick="toggleAll(this)" style="cursor: pointer; width: 16px; height: 16px;">
                                 </th>
-                                <th style="padding: 1rem;">Roll Number</th>
-                                <th style="padding: 1rem;">Department</th>
-                                <th style="padding: 1rem;">Semester</th>
-                                <th style="padding: 1rem; text-align: right;">Actions</th>
+                                <th>Roll Number</th>
+                                <th>Department</th>
+                                <th>Semester</th>
+                                <th style="text-align: right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             {% for student in students %}
-                            <tr style="border-bottom: 1px solid var(--border-color);">
-                                <td style="padding: 1rem;">
-                                    <input type="checkbox" name="student_ids" value="{{ student.id }}"
-                                        class="student-checkbox" onclick="updateSelection()">
+                            <tr class="student-row">
+                                <td style="text-align: center;">
+                                    <input type="checkbox" name="student_ids" value="{{ student.id }}" class="student-checkbox" onclick="updateSelection()" style="cursor: pointer; width: 16px; height: 16px;">
                                 </td>
-                                <td style="padding: 1rem; font-weight: bold;">{{ student.roll_number }}</td>
-                                <td style="padding: 1rem;">{{ student.department.code }}</td>
-                                <td style="padding: 1rem;">{{ student.semester.name }}</td>
-                                <td style="padding: 1rem; text-align: right;">
-                                    <button type="button" class="btn btn-sm btn-outline"
-                                        onclick="editStudent('{{ student.id }}', '{{ student.roll_number }}', '{{ student.department.id }}', '{{ student.semester.id }}')">Edit</button>
-                                    <a href="{% url 'student_delete' student.id %}" class="btn btn-sm"
-                                        style="background: #ef4444; border: none; color: white;"
-                                        onclick="return confirm('Delete student {{ student.roll_number }}?')">Delete</a>
+                                <td>
+                                    <span class="roll-cell" style="font-weight: 700; color: #ffffff;">{{ student.roll_number }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-primary">{{ student.department.code }}</span>
+                                    <span style="font-size: 0.85rem; color: var(--text-secondary); margin-left: 0.4rem;">{{ student.department.name }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-neutral">{{ student.semester.name }}</span>
+                                </td>
+                                <td style="text-align: right;">
+                                    <div style="display: inline-flex; gap: 0.4rem;">
+                                        <button type="button" class="btn btn-sm btn-outline"
+                                                onclick="editStudent('{{ student.id }}', '{{ student.roll_number }}', '{{ student.department.id }}', '{{ student.semester.id }}')">
+                                            Edit
+                                        </button>
+                                        <a href="{% url 'student_delete' student.id %}" class="btn btn-sm btn-danger"
+                                           onclick="return confirm('Delete student {{ student.roll_number }}?')">
+                                            Delete
+                                        </a>
+                                    </div>
                                 </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="5" style="padding: 2rem; text-align: center; color: var(--text-muted);">No
-                                    students found. Add one or adjust filters.</td>
+                                <td colspan="5" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                                    No registered students found matching your criteria. Use 'Add Student' to create records.
+                                </td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -110,232 +163,231 @@
         </div>
     </div>
 
-    <!-- Departments Tab -->
+    <!-- 2. DEPARTMENTS TAB -->
     <div id="Departments" class="tab-content" style="display: none;">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3>Departments</h3>
-                <button class="btn" onclick="openModal('deptModal')">Add Department</button>
+        <div class="glass-card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Academic Departments</h3>
+                    <div class="card-subtitle">Manage institutional faculties and branch codes</div>
+                </div>
+                <button type="button" class="btn" onclick="openModal('deptModal')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Add Department</span>
+                </button>
             </div>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="text-align: left; background: rgba(255,255,255,0.05);">
-                        <th style="padding: 1rem;">Name</th>
-                        <th style="padding: 1rem;">Code</th>
-                        <th style="padding: 1rem; text-align: right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for d in departments %}
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 1rem;">{{ d.name }}</td>
-                        <td style="padding: 1rem;">{{ d.code }}</td>
-                        <td style="padding: 1rem; text-align: right;">
-                            <a href="{% url 'department_delete' d.id %}" class="btn btn-sm"
-                                style="background: #ef4444; border: none; color: white;"
-                                onclick="return confirm('Delete {{ d.name }}? This will delete ALL associated students!')">Delete</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Department Code</th>
+                            <th>Full Academic Name</th>
+                            <th>Student Count</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for d in departments %}
+                        <tr>
+                            <td>
+                                <span class="badge badge-primary" style="font-size: 0.85rem;">{{ d.code }}</span>
+                            </td>
+                            <td style="font-weight: 600; color: #ffffff;">{{ d.name }}</td>
+                            <td>
+                                <span class="badge badge-neutral">{{ d.students.count }} students</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'department_delete' d.id %}" class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Delete {{ d.name }}? This will permanently delete ALL associated student records!')">
+                                    Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                                No departments registered yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
 
-    <!-- Semesters Tab -->
+    <!-- 3. SEMESTERS TAB -->
     <div id="Semesters" class="tab-content" style="display: none;">
-        <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-                <h3>Semesters</h3>
-                <button class="btn" onclick="openModal('semModal')">Add Semester</button>
+        <div class="glass-card">
+            <div class="card-header">
+                <div>
+                    <h3 class="card-title">Academic Semesters</h3>
+                    <div class="card-subtitle">Configure semester terms and numbering levels</div>
+                </div>
+                <button type="button" class="btn" onclick="openModal('semModal')">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    <span>Add Semester</span>
+                </button>
             </div>
-            <table style="width: 100%; border-collapse: collapse;">
-                <thead>
-                    <tr style="text-align: left; background: rgba(255,255,255,0.05);">
-                        <th style="padding: 1rem;">Name</th>
-                        <th style="padding: 1rem;">Number</th>
-                        <th style="padding: 1rem; text-align: right;">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for s in semesters %}
-                    <tr style="border-bottom: 1px solid var(--border-color);">
-                        <td style="padding: 1rem;">{{ s.name }}</td>
-                        <td style="padding: 1rem;">{{ s.number }}</td>
-                        <td style="padding: 1rem; text-align: right;">
-                            <a href="{% url 'semester_delete' s.id %}" class="btn btn-sm"
-                                style="background: #ef4444; border: none; color: white;"
-                                onclick="return confirm('Delete {{ s.name }}? This will delete ALL associated students!')">Delete</a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+
+            <div class="table-wrapper">
+                <table class="modern-table">
+                    <thead>
+                        <tr>
+                            <th>Semester Sequence</th>
+                            <th>Semester Label</th>
+                            <th>Student Count</th>
+                            <th style="text-align: right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in semesters %}
+                        <tr>
+                            <td>
+                                <span class="badge badge-cyan" style="background: var(--accent-cyan-light); color: #67e8f9; border: 1px solid rgba(6, 182, 212, 0.4);">
+                                    Semester {{ s.number }}
+                                </span>
+                            </td>
+                            <td style="font-weight: 600; color: #ffffff;">{{ s.name }}</td>
+                            <td>
+                                <span class="badge badge-neutral">{{ s.students.count }} students</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <a href="{% url 'semester_delete' s.id %}" class="btn btn-sm btn-danger"
+                                   onclick="return confirm('Delete {{ s.name }}? This will delete ALL associated students!')">
+                                    Delete
+                                </a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; padding: 3rem; color: var(--text-muted);">
+                                No semesters configured yet.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         </div>
     </div>
-
 </div>
 
-<!-- Student Modal -->
-<div id="studentModal" class="modal">
-    <div class="modal-content">
-        <h2>Add / Edit Student</h2>
+<!-- Add / Edit Student Modal -->
+<div id="studentModal" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 id="studentModalTitle" style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">Add Student</h3>
+            <button type="button" class="toast-close-btn" onclick="closeModal('studentModal')">&times;</button>
+        </div>
         <form method="post" action="{% url 'student_save' %}">
             {% csrf_token %}
             <input type="hidden" name="student_id" id="modalStudentId">
-            <div class="form-group">
-                <label>Roll Number</label>
-                <input type="text" name="roll_number" id="modalRoll" required>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Student Roll Number</label>
+                    <input type="text" name="roll_number" id="modalRoll" placeholder="e.g. 743612" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department</label>
+                    <select name="department_id" id="modalDept" required>
+                        <option value="" disabled selected>-- Select Department --</option>
+                        {% for d in departments %}
+                        <option value="{{ d.id }}">{{ d.code }} &bull; {{ d.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Semester</label>
+                    <select name="semester_id" id="modalSem" required>
+                        <option value="" disabled selected>-- Select Semester --</option>
+                        {% for s in semesters %}
+                        <option value="{{ s.id }}">{{ s.name }} (Sem {{ s.number }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Department</label>
-                <select name="department_id" id="modalDept" required>
-                    {% for d in departments %}
-                    <option value="{{ d.id }}">{{ d.name }} ({{ d.code }})</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div class="form-group">
-                <label>Semester</label>
-                <select name="semester_id" id="modalSem" required>
-                    {% for s in semesters %}
-                    <option value="{{ s.id }}">{{ s.name }}</option>
-                    {% endfor %}
-                </select>
-            </div>
-            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button type="submit" class="btn">Save</button>
+            <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('studentModal')">Cancel</button>
+                <button type="submit" class="btn">Save Student Record</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Dept Modal -->
-<div id="deptModal" class="modal">
-    <div class="modal-content">
-        <h2>Add Department</h2>
+<!-- Add Department Modal -->
+<div id="deptModal" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">Add Academic Department</h3>
+            <button type="button" class="toast-close-btn" onclick="closeModal('deptModal')">&times;</button>
+        </div>
         <form method="post" action="{% url 'manage_metadata' %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="add_department">
             <input type="hidden" name="next" value="manage_students">
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" name="name" required placeholder="e.g. Computer Science">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Department Code (Short)</label>
+                    <input type="text" name="code" placeholder="e.g. CSE, EEE, CIVIL" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Department Full Name</label>
+                    <input type="text" name="name" placeholder="e.g. Computer Science & Engineering" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Code</label>
-                <input type="text" name="code" required placeholder="e.g. CSE">
-            </div>
-            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button type="submit" class="btn">Save</button>
+            <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('deptModal')">Cancel</button>
+                <button type="submit" class="btn">Create Department</button>
             </div>
         </form>
     </div>
 </div>
 
-<!-- Sem Modal -->
-<div id="semModal" class="modal">
-    <div class="modal-content">
-        <h2>Add Semester</h2>
+<!-- Add Semester Modal -->
+<div id="semModal" class="modal-overlay">
+    <div class="modal-dialog">
+        <div class="modal-header">
+            <h3 style="font-size: 1.25rem; font-weight: 700; color: #ffffff;">Add Academic Semester</h3>
+            <button type="button" class="toast-close-btn" onclick="closeModal('semModal')">&times;</button>
+        </div>
         <form method="post" action="{% url 'manage_metadata' %}">
             {% csrf_token %}
             <input type="hidden" name="action" value="add_semester">
             <input type="hidden" name="next" value="manage_students">
-            <div class="form-group">
-                <label>Name</label>
-                <input type="text" name="name" required placeholder="e.g. 1st Semester">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label class="form-label">Semester Sequence Number</label>
+                    <input type="number" name="number" placeholder="e.g. 1, 2, 3..." min="1" max="12" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Semester Label</label>
+                    <input type="text" name="name" placeholder="e.g. 1st Semester, 4th Semester" required>
+                </div>
             </div>
-            <div class="form-group">
-                <label>Number</label>
-                <input type="number" name="number" required placeholder="e.g. 1">
-            </div>
-            <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                <button type="submit" class="btn">Save</button>
+            <div class="modal-footer">
                 <button type="button" class="btn btn-outline" onclick="closeModal('semModal')">Cancel</button>
+                <button type="submit" class="btn">Create Semester</button>
             </div>
         </form>
     </div>
 </div>
+{% endblock %}
 
-<style>
-    .tab-btn {
-        background: transparent;
-        border: none;
-        color: var(--text-muted);
-        padding: 1rem 2rem;
-        cursor: pointer;
-        font-size: 1.1rem;
-        border-bottom: 2px solid transparent;
-        transition: all 0.2s;
-    }
-
-    .tab-btn:hover {
-        color: white;
-    }
-
-    .tab-btn.active {
-        color: var(--accent-color);
-        border-bottom-color: var(--accent-color);
-    }
-
-    .modal {
-        display: none;
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background: rgba(0, 0, 0, 0.7);
-        z-index: 1000;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .modal-content {
-        background: var(--card-bg);
-        border: 1px solid var(--border-color);
-        padding: 2rem;
-        border-radius: 12px;
-        width: 100%;
-        max-width: 500px;
-    }
-
-    .form-group {
-        margin-bottom: 1rem;
-    }
-
-    .form-group label {
-        display: block;
-        margin-bottom: 0.5rem;
-        color: var(--text-muted);
-    }
-
-    .form-group input,
-    .form-group select {
-        width: 100%;
-        padding: 0.75rem;
-        background: rgba(15, 23, 42, 0.6);
-        border: 1px solid var(--border-color);
-        color: white;
-        border-radius: 6px;
-    }
-</style>
-
+{% block extra_scripts %}
 <script>
     function openTab(evt, tabName) {
-        var i, tabcontent, tablinks;
-        tabcontent = document.getElementsByClassName("tab-content");
-        for (i = 0; i < tabcontent.length; i++) {
-            tabcontent[i].style.display = "none";
+        const contents = document.getElementsByClassName("tab-content");
+        for (let i = 0; i < contents.length; i++) {
+            contents[i].style.display = "none";
         }
-        tablinks = document.getElementsByClassName("tab-btn");
-        for (i = 0; i < tablinks.length; i++) {
-            tablinks[i].className = tablinks[i].className.replace(" active", "");
+        const links = document.getElementsByClassName("tab-btn");
+        for (let i = 0; i < links.length; i++) {
+            links[i].classList.remove("active");
         }
         document.getElementById(tabName).style.display = "block";
-        evt.currentTarget.className += " active";
+        evt.currentTarget.classList.add("active");
     }
 
     function openModal(id) {
@@ -344,10 +396,10 @@
 
     function closeModal(id) {
         document.getElementById(id).style.display = "none";
-        // Reset form specifics if needed
         if (id === 'studentModal') {
             document.getElementById('modalStudentId').value = '';
             document.getElementById('modalRoll').value = '';
+            document.getElementById('studentModalTitle').innerText = "Add Student";
         }
     }
 
@@ -356,36 +408,36 @@
         document.getElementById('modalRoll').value = roll;
         document.getElementById('modalDept').value = dept;
         document.getElementById('modalSem').value = sem;
+        document.getElementById('studentModalTitle').innerText = "Edit Student Record";
         openModal('studentModal');
     }
 
-    // Close modal on outside click
-    window.onclick = function (event) {
-        if (event.target.classList.contains('modal')) {
-            event.target.style.display = "none";
-        }
-    }
-
-    // Bulk Actions Scripts
     function toggleAll(source) {
         const checkboxes = document.querySelectorAll('.student-checkbox');
-        for (let i = 0; i < checkboxes.length; i++) {
-            checkboxes[i].checked = source.checked;
-        }
+        checkboxes.forEach(cb => cb.checked = source.checked);
         updateSelection();
     }
 
     function updateSelection() {
-        const checkedBoxes = document.querySelectorAll('.student-checkbox:checked');
-        const count = checkedBoxes.length;
+        const checked = document.querySelectorAll('.student-checkbox:checked');
+        const count = checked.length;
         document.getElementById('selectedCount').innerText = count;
-
-        const actionDiv = document.getElementById('selectionActions');
-        if (count > 0) {
-            actionDiv.style.display = 'block';
-        } else {
-            actionDiv.style.display = 'none';
-        }
+        document.getElementById('selectionActions').style.display = count > 0 ? 'block' : 'none';
     }
+
+    function filterStudentTable() {
+        const query = document.getElementById('liveRollSearch').value.toLowerCase().trim();
+        const rows = document.querySelectorAll('.student-row');
+        rows.forEach(row => {
+            const roll = row.querySelector('.roll-cell').innerText.toLowerCase();
+            row.style.display = roll.includes(query) ? '' : 'none';
+        });
+    }
+
+    window.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-overlay')) {
+            e.target.style.display = 'none';
+        }
+    });
 </script>
 {% endblock %}
